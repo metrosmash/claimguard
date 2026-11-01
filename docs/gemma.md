@@ -78,8 +78,8 @@ Caveats: session dies on idle/disconnect (keep tab open); URL changes each resta
 
 ---
 ## Hosting the app itself
-- Backend (FastAPI, existing Dockerfile): DO **App Platform** → Create App → GitHub repo → Dockerfile detected → port 8000 → add env vars as *encrypted* → deploy (basic plan ~$5/mo, from the $25 credit). Or a $6 basic Droplet: `docker build -t claimguard . && docker run -d -p 80:8000 --env-file .env claimguard`.
-- Frontend: Vercel (repo already set up for it) with `VITE_API_URL=<backend url>`.
+- Backend (FastAPI, API-only Dockerfile): Render, or DO **App Platform** → Create App → GitHub repo → Dockerfile detected → port 8000 → add env vars as *encrypted* → deploy (basic plan ~$5/mo, from the $25 credit). Or a $6 basic Droplet: `docker build -t claimguard . && docker run -d -p 80:8000 --env-file .env claimguard`. The container serves the API only; open the Vercel UI and point it at this backend.
+- Frontend: Vercel (repo already set up for it) with `VITE_API_URL=/cg-api`; `frontend/vercel.json` proxies `/cg-api/*` to the Render backend.
 
 ## Troubleshooting
 - `model not found` → `ollama list`; exact tag. Gemini: use `gemma-4-31b-it`.

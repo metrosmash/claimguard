@@ -1,15 +1,5 @@
-# Cloud build (Render/Railway/DO) — no local Docker Desktop required.
-# Stage 1: frontend
-FROM node:20-alpine AS frontend
-WORKDIR /fe
-COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
-COPY frontend/ ./
-# Same-origin API in production (empty VITE_API_URL → relative URLs)
-ENV VITE_API_URL=
-RUN npm run build
-
-# Stage 2: API + static UI
+# Cloud build (Render/Railway/DO) — API-only image.
+# The React UI is built and served by Vercel.
 FROM python:3.11-slim
 WORKDIR /app
 
@@ -24,7 +14,6 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
-COPY --from=frontend /fe/dist /app/frontend/dist
 
 EXPOSE 8000
 

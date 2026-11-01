@@ -1,7 +1,7 @@
 # ClaimGuard — Backend / cloud deployment plan
 
 **When:** deploy before the demo (not required for local JSON-sample testing).  
-**Goal:** one public URL serving API + UI. No Docker Desktop on your laptop — the cloud builds the repo `Dockerfile`.  
+**Goal:** Render hosts the FastAPI backend; Vercel hosts the React UI. No Docker Desktop on your laptop — the cloud builds the repo `Dockerfile`.  
 **Repo:** https://github.com/drizzy765/claimguard · branch `main`  
 **Spec:** [`.do/app.yaml`](../.do/app.yaml)
 
@@ -11,7 +11,7 @@
 
 | Option | Use when | Approx cost | Notes |
 |--------|----------|-------------|--------|
-| **A. DigitalOcean App Platform** (primary) | You have DO credit / want a stable demo URL | Basic ~$5/mo | Builds Dockerfile from GitHub; UI+API same origin |
+| **A. DigitalOcean App Platform** (primary) | You have DO credit / want a stable demo URL | Basic ~$5/mo | Builds API-only Dockerfile from GitHub; UI stays on Vercel |
 | **B. Render Blueprint** (backup) | DO blocked / no credit | Free tier | Cold start after idle — warm `/health` before judges |
 | **C. DO Droplet + Docker** | Need SSH / custom port | ~$6/mo | Only if App Platform fails; still no local Docker if you build on the droplet |
 
@@ -61,7 +61,7 @@
 | `LLM_FALLBACK_API_KEY` | `ollama` | no |
 | `LLM_FALLBACK_MODEL` | `gemma4:12b` | no |
 
-6. **Create Resources** → wait for build + deploy (first build can take 5–15 min; Node + Python stages).  
+6. **Create Resources** → wait for build + deploy (first build can take 5–15 min; Python stage only).  
 7. Copy the live URL: `https://claimguard-xxxxx.ondigitalocean.app`
 
 ### A2. Optional CLI (later)
@@ -86,7 +86,7 @@ curl.exe -s "$BASE/health"
 curl.exe -s -X POST "$BASE/audit" -H "X-Factory-API-Key: $KEY" -F "file=@data/sample_bills/bill_padded.json"
 # expect: fraud.verdict REJECT (or REVIEW), score populated
 
-# Browser: open $BASE → paste same KEY → upload bill_padded.jpg or .json
+# Browser: open the Vercel UI, set its API host to $BASE, paste the same KEY, upload bill_padded.jpg or .json
 ```
 
 ### A4. Auto-deploys
@@ -118,7 +118,7 @@ docker run -d -p 80:8000 --env-file .env --name claimguard claimguard
 curl -s http://127.0.0.1/health
 ```
 
-3. Open `http://DROPLET_IP/` (add HTTPS later with Caddy/nginx if time).
+3. The container is API-only. Open the Vercel UI (or run Vite locally) and point its API host at `http://DROPLET_IP` (add HTTPS later with Caddy/nginx if time).
 
 ---
 
@@ -126,11 +126,13 @@ curl -s http://127.0.0.1/health
 
 | Path | Purpose |
 |------|---------|
-| `/` | ClaimGuard React UI (built in Docker stage 1) |
+| `/` | JSON service descriptor (the UI is on Vercel) |
 | `/health` | Liveness (no API key) |
 | `/audit` | Bill audit (`X-Factory-API-Key` required) |
 | `/claimguard/audit` | Alias of `/audit` |
 | `/run/{profile}`, `/supervisor`, `/upload` | Chassis endpoints (API key) |
+
+The container no longer builds or serves the React UI; Vercel serves it and proxies `/cg-api/*` to the API host.
 
 Failover chain in `core/llm.py`: **Gemini → optional Ollama → Groq**.
 
@@ -139,7 +141,7 @@ Failover chain in `core/llm.py`: **Gemini → optional Ollama → Groq**.
 ## Demo-day runbook (10 min before judges)
 
 1. Confirm DO app status = **Active** (or warm Render `/health`)  
-2. Browser → app URL → paste `FACTORY_MASTER_KEY`  
+2. Browser → Vercel URL → confirm the API host points at the Render/DO backend → paste `FACTORY_MASTER_KEY`  
 3. Upload `data/sample_bills/bill_clean.*` → expect **APPROVE**  
 4. Upload `data/sample_bills/bill_padded.*` → expect **REJECT** + flags  
 5. If Gemini 429/credit: Groq should kick in for text steps; for vision, prefer `.json` samples or fix Gemini key  
@@ -153,11 +155,11 @@ Optional open-weights aside: GPU droplet + Ollama per [gemma.md](gemma.md) §B �
 
 | Symptom | Fix |
 |---------|-----|
-| Build fails on `npm ci` | Confirm `frontend/package-lock.json` is on `main`; retry deploy |
-| App up but `/` 404 | Image missing `frontend/dist` — rebuild; check Dockerfile stage copy |
+| Build fails on `pip install` | Check `requirements.txt`; retry deploy |
+| `/` does not return JSON | Deploy did not pick up the API-only Dockerfile — rebuild and check `GET /` |
 | `/audit` 401 | UI key ≠ `FACTORY_MASTER_KEY` env |
 | `/audit` 500 / LLM errors | Check `LLM_API_KEY` / `GROQ_API_KEY`; try JSON sample (rules path if no keys) |
-| Health ok, UI blank | Hard refresh; confirm static assets under `/assets` |
+| Health ok, UI blank | Check the Vercel deployment and `https://<vercel-host>/cg-api/health`; hard refresh |
 | Wrong model | Set `LLM_MODEL=gemma-4-31b-it` and redeploy |
 
 ---
@@ -166,8 +168,8 @@ Optional open-weights aside: GPU droplet + Ollama per [gemma.md](gemma.md) §B �
 
 | Field | Value |
 |-------|--------|
-| Host (A / B / C) | **B — Render** |
-| Public URL | https://claimguard-sfxx.onrender.com/ |
+| Host (A / B / C) | **B — Render (API) + Vercel (UI)** |
+| Public URL | API: https://claimguard-sfxx.onrender.com/ · UI: https://claimguard-red.vercel.app/ |
 | Deployed commit SHA | (see `main` on GitHub) |
 | Region / plan | Render free / web service |
 | Notes | Cold starts after idle; warm `/health` before demo |

@@ -49,7 +49,7 @@ Rules are computed in Python so the verdict is reproducible; Gemma does percepti
 | LLM_MODEL | gemma-4-31b-it | gemma4:12b |
 
 ## Deployment
-- Backend: existing Dockerfile → DigitalOcean App Platform (or $6 droplet). Secrets as encrypted env vars.
-- Frontend: Vercel, `VITE_API_URL`.
+- Backend: API-only Dockerfile → Render (or DigitalOcean App Platform / $6 droplet). Secrets as encrypted env vars.
+- Frontend: Vercel builds `frontend/` and proxies `/cg-api/*` to the backend (`VITE_API_URL=/cg-api`).
 - Model: Gemini API primary; DO RTX 4000 GPU droplet ($0.76/h) for open-weights demo. See gemma.md.
 - Security: `.env` gitignored, `FACTORY_MASTER_KEY` on all write endpoints, no real patient data (synthetic bills only).

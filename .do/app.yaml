@@ -1,4 +1,5 @@
-# DigitalOcean App Platform — builds Dockerfile in the cloud (no Docker Desktop).
+# DigitalOcean App Platform — API-only image (the React UI is served by Vercel).
+# Builds Dockerfile in the cloud (no Docker Desktop).
 # Dashboard: https://cloud.digitalocean.com/apps/new
 # Or: doctl apps create --spec .do/app.yaml
 name: claimguard

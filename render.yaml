@@ -1,3 +1,4 @@
+# API-only backend. The React UI is built and served by Vercel.
 # Deploy: https://dashboard.render.com → New → Blueprint → connect drizzy765/claimguard
 # No local Docker needed — Render builds the Dockerfile in the cloud.
 services:

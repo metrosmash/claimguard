@@ -109,7 +109,12 @@ Open the local URL printed by Vite. In the app's **Settings**, set the API host 
 
 ## Deployment
 
-The included [Dockerfile](Dockerfile) builds the frontend and serves it with the API. Deployment configuration and instructions:
+The backend and frontend deploy separately:
+
+- **Render** builds the [Dockerfile](Dockerfile) and hosts the FastAPI API only (`/health`, `/audit`, …).
+- **Vercel** builds and serves the React app from `frontend/`, proxying API calls to Render through `/cg-api/*`.
+
+Deployment configuration and instructions:
 
 - [Render Blueprint](render.yaml)
 - [Deployment plan](docs/deployment.plan.md)
